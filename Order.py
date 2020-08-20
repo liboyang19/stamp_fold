@@ -53,7 +53,7 @@ class Order:
             new_arr[arr[i]-1] = i + 1
         return new_arr
 
-    def _judger(self) -> bool:
+    def segment(self) -> 'tuple':
         """
         将地址分割为奇序列和偶序列，以方便验证是否可折，即检验其充要条件。
         e.g. input: [1, 2, 3, 4, 5, 6]
@@ -76,6 +76,14 @@ class Order:
                                                self.address[1::2])]
             even_list = [(x, y) for x, y in zip(self.address[1:-2:2],
                                                 self.address[2:-1:2])]
+        return odd_list, even_list
+
+    def _judger(self) -> bool:
+        """
+        检验整个Order是否为可折叠Order，即判断奇序列和偶序列是否满足条件
+        :return:
+        """
+        odd_list, even_list = self.segment()
         return self._judge_list(odd_list) and self._judge_list(even_list)
 
     @staticmethod
