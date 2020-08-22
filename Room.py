@@ -1,4 +1,4 @@
-import Suite
+from Suite import Suite
 
 
 class Room:
@@ -58,7 +58,7 @@ class Room:
         :return:
         """
         new_cp = list(cp)
-        for i, (x, y) in new_cp:
+        for i, (x, y) in enumerate(new_cp):
             new_cp[i] = (y, x)
         return new_cp
 
@@ -72,3 +72,9 @@ class Room:
         [self._routines.append(x) for x in self._suite_x.routines]
         for x in self._suite_y.routines:
             self._routines.append(self._rotate_points(x))
+
+if __name__ == '__main__':
+    r = Room(10, 10)
+    r.control_points = [(3, 1), (4, 10), (3, 5), (4, 6), (6, 9), (5, 2)]
+    r.run()
+    # print(r.routines)

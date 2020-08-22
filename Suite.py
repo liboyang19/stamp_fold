@@ -145,6 +145,7 @@ class Suite:
         self._init_orders.append(Order([1]))
         front_order = self._init_orders.popleft()
         while len(front_order) < self._height:
+            # print(front_order.address)
             [self._init_orders.append(x) for x in front_order.plus(key=self._key)]
             try:
                 front_order = self._init_orders.popleft()
@@ -201,7 +202,7 @@ class Suite:
         cp_row = [t[1] - 1 for t in self.control_points]
         cp_col = [t[0] - 1 for t in self.control_points]
         cp_ranks = stamp_matrix[cp_row, cp_col]
-        return cp_ranks == sorted(cp_ranks)
+        return np.array_equal(cp_ranks, np.sort(cp_ranks))
 
     def clear(self):
         """
