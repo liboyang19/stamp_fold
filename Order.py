@@ -12,7 +12,7 @@ class Order:
             self._address = Order.convert(arr)
         else:
             raise ValueError("Invalid style argument:%s" % style)
-        self._is_fold = self._judger()
+        self._is_fold = self.judger()
 
     @property
     def folding(self):
@@ -78,16 +78,16 @@ class Order:
                                                 self.address[2:-1:2])]
         return odd_list, even_list
 
-    def _judger(self) -> bool:
+    def judger(self) -> bool:
         """
         检验整个Order是否为可折叠Order，即判断奇序列和偶序列是否满足条件
         :return:
         """
         odd_list, even_list = self.segment()
-        return self._judge_list(odd_list) and self._judge_list(even_list)
+        return self.judge_list(odd_list) and self.judge_list(even_list)
 
     @staticmethod
-    def _judge_list(l: list) -> bool:
+    def judge_list(l: list) -> bool:
         """
         判断一个由数对组成的序列是否符合可折充要条件，如
         [(1, 2), (3, 4), (5, 6)]
