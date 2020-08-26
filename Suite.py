@@ -9,7 +9,7 @@ class Suite:
     房间类。
     """
 
-    def __init__(self, width: int, height: int):
+    def __init__(self, width: int, height: int, mode=False):
         if not (isinstance(width, int) and isinstance(height, int)):
             raise TypeError("The width and height of room must be integers.")
         if width < 3 or height < 3:
@@ -22,6 +22,11 @@ class Suite:
         self._routines = []
         self._orders = []
         self._control_points_rank = []
+        self._begin_end_mode = mode
+
+    @property
+    def begin_end_mode(self):
+        return self._begin_end_mode
 
     @property
     def control_points(self):
@@ -34,6 +39,10 @@ class Suite:
     @property
     def routines(self):
         return self._routines
+
+    @begin_end_mode.setter
+    def begin_end_mode(self, mode):
+        self._begin_end_mode = mode
 
     def _get_routine(self, order):
         """
@@ -52,8 +61,10 @@ class Suite:
         odd_counter = self._get_thick(odd_list)
         even_counter = self._get_thick(even_list)
         # 判断厚度是否大于宽度，如果大于，则无法画出，即时返回 None
-        if np.max(odd_counter) + np.max(even_counter) > self._width:
-            return None, None
+        # 注意这里需要加1，表示个数
+        if np.max(odd_counter) + np.max(even_counter) + 1 > self._width:
+            # 如果画不出，则返回两个空集
+            return [], []
         odd_x = self._width - odd_counter
         even_x = even_counter + 1
         len_axis = len(odd_x) + len(even_x)
@@ -119,7 +130,6 @@ class Suite:
         # 通过控制点坐标计算控制点顺序，用self._control_points_rank保存
         self._get_cp_rank()
         # 计算所有理论上的可折序列
-        # self._calc_init()
         self._create_init()
         # 过滤掉无法实现的路径
         self._filter()
@@ -136,24 +146,6 @@ class Suite:
                 if self._kernel(cr):
                     self._orders.append(current_order)
                     self._routines.append(cr)
-
-    # def _calc_init(self):
-    #     """
-    #     计算生成初始Orders，即满足地址要求的Orders，但未验证是否满足实际情况。
-    #     会将计算结果保存在 self._init_orders 中
-    #     :return:
-    #     """
-    #     # 先用长度为1的地址构建Order类，然后入队
-    #     self._init_orders.append(Order([1]))
-    #     front_order = self._init_orders.popleft()
-    #     while len(front_order) < self._height:
-    #         # print(front_order.address)
-    #         [self._init_orders.append(x) for x in front_order.plus(key=self._key)]
-    #         try:
-    #             front_order = self._init_orders.popleft()
-    #         except IndexError:
-    #             return
-    #     self._init_orders.append(front_order)
 
     def _key(self, addr_list: list) -> bool:
         """
@@ -186,6 +178,8 @@ class Suite:
         ref_strip = np.arange(1, self._height * self._width + 1)
         stamp_matrix = np.zeros([self._height, self._width], dtype=int)
         i = 0
+        if not routine:
+            return False
         for (start_x, start_y), (end_x, end_y) in zip(routine[:-1], routine[1:]):
             ref_c = (end_x - start_x, end_y - start_y)
             if ref_c[0] == 0:
@@ -197,13 +191,22 @@ class Suite:
             else:
                 strip_len = ref_c[0]
                 if strip_len > 0:
-                    stamp_matrix[start_y - 1, start_x - 1:end_x] = ref_strip[i:i+strip_len+1]
+                    try:
+                        stamp_matrix[start_y - 1,
+                        start_x - 1:end_x] = ref_strip[i:i + strip_len + 1]
+                    except ValueError:
+                        # return False
+                        print(i, routine)
+                        raise ValueError("Error")
                 if strip_len < 0:
                     stamp_matrix[start_y - 1, end_x - 1:start_x] = ref_strip[i:i-strip_len+1][::-1]
             i += np.abs(strip_len)
         cp_row = [t[1] - 1 for t in self.control_points]
         cp_col = [t[0] - 1 for t in self.control_points]
         cp_ranks = stamp_matrix[cp_row, cp_col]
+        if self.begin_end_mode:
+            if cp_ranks[0] != 1 or cp_ranks[-1] != len(ref_strip):
+                return False
         return np.array_equal(cp_ranks, np.sort(cp_ranks))
 
     def _create_init(self):
@@ -237,6 +240,8 @@ class Suite:
             temp_index = index_pool.popleft()
         except IndexError:
             return
+        if not insert_no:
+            self._init_orders.append(Order(temp_arr))
         while insert_no:
             temp_insert = insert_no.pop()
             while len(temp_index) > len(insert_no):

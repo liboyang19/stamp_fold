@@ -4,16 +4,30 @@ from Room import Room
 from Order import Order
 
 
+# Application 是继承 Frame 的，是一个 Frame
+# 在 tkinter中，Frame相当于一个容器，所有的 Widget 都是放在上面的
+# Widget 可以选择 master，就是它们 widget 的母版
+# 利用这个思想，可以把界面的区域分割出来
 class Application(tk.Frame):
     def __init__(self, master=None):
+        # 这里的构造函数需要master作为参数，这里我们用root来初始化
+        # 也就是说，Application 类的母版是在root上
+        # 换句话说，Application 是 画在 root 上的一个 Frame
+        # 所以这句话是先把父类构造好，用 master 去构造一个 frame
         super().__init__(master)
         self.master = master
         self.pack()
+        # 设置颜色
         self.color_config()
+        # 一些房间基本参数
         self.cell_size = 100
         self.room_height = 5
         self.room_width = 5
         self.control_points = []
+        # 起点终点
+        self.begin_point = []
+        self.end_point = []
+        # 画界面
         self.draw_surface()
 
     def draw_surface(self):
@@ -21,6 +35,8 @@ class Application(tk.Frame):
         绘制主界面
         :return:
         """
+        # 分别画出不同的区域，为了排列方便
+        # 首先画出一个网格，也就是好多Frame
         self.create_grid()
         self.create_room()
         self.create_info()
@@ -30,9 +46,11 @@ class Application(tk.Frame):
         创建区域，在区域上作图
         :return:
         """
+        # room 区域的 Frame
         self.room_region = tk.Frame(self)
         self.room_region.grid(row=0, column=0)
 
+        # 信息区域的Frame
         self.info_region = tk.Frame(self)
         self.info_region.grid(row=0, column=1)
 
@@ -128,13 +146,31 @@ class Application(tk.Frame):
         self.next_bt["command"] = self.next_page
         self.next_bt.grid(row=end_row + 2, column=1)
 
+        # 用该变量判断是否为起终点模式
+        self.is_ht = tk.IntVar()
+        self.ht_checkbtn = tk.Checkbutton(self.info_region,
+                                          text="Begin/End Mode",
+                                          variable=self.is_ht)
+        self.ht_checkbtn.grid(row=end_row + 3, column=1)
+
     def set_control_points(self, event):
         self.room_canvas.focus_set()
         cp_rank = len(self.control_points) + 1
         cp = self.transform_axis((event.x, event.y), arg='real')
+        if self.is_ht.get():
+            if not self.begin_point:
+                self.begin_point.append(cp)
+                self.draw_no(cp, content='S')
+                print("Begin: ", event.x, event.y)
+                return
+            elif not self.end_point:
+                self.end_point.append(cp)
+                self.draw_no(cp, content='E')
+                print("End: ", event.x, event.y)
+                return
         self.control_points.append(cp)
         print("clicked at", event.x, event.y)
-        self.draw_no(x=cp[0], y=cp[1], no=cp_rank)
+        self.draw_no(cp, content=cp_rank)
         print(self.control_points)
         print("Control_points_no:%d" % cp_rank)
 
@@ -146,6 +182,8 @@ class Application(tk.Frame):
         print("clicked at", event.x, event.y)
 
     def color_config(self):
+        # 所有的用户设置
+        # 颜色可以是 #00000
         self.color_set = {}
         self.color_set["room"] = "blue"
         self.color_set["routine"] = "green"
@@ -167,8 +205,11 @@ class Application(tk.Frame):
     def next_page(self):
         self.room_canvas.delete("all")
         self.create_cell()
-        for i, (x, y) in enumerate(self.control_points, 1):
-            self.draw_no(x, y, i)
+        if self.is_ht.get():
+            self.draw_no(self.begin_point[0], 'B')
+            self.draw_no(self.end_point[0], 'E')
+        for i, c in enumerate(self.control_points, 1):
+            self.draw_no(c, i)
         self.draw_routine()
 
     def confirm(self):
@@ -176,7 +217,8 @@ class Application(tk.Frame):
         开始寻找路径
         :return:
         """
-        self.room.control_points = self.control_points
+        self.room.control_points = self.begin_point + self.control_points + self.end_point
+        self.room.begin_end_mode = bool(self.is_ht.get())
         print("计算中...")
         self.room.run()
         print("计算完毕...")
@@ -202,8 +244,10 @@ class Application(tk.Frame):
         """
         self.room_canvas.destroy()
         self.control_points = []
+        self.begin_point = []
+        self.end_point = []
 
-    def transform_axis(self, *c, arg='virtual'):
+    def transform_axis(self, c, arg='virtual'):
         """
         真实坐标与建模坐标的转换
         :param c: 坐标
@@ -211,20 +255,20 @@ class Application(tk.Frame):
         :return:
         """
         if arg == 'real':
-            real_cx, real_cy = c[0]
+            real_cx, real_cy = c
             return ((real_cx // self.cell_size) + 1,
                     (real_cy // self.cell_size) + 1)
         if arg == 'virtual':
-            virtual_cx, virtual_cy = c[0]
+            virtual_cx, virtual_cy = c
             return (int((virtual_cx - 0.5) * self.cell_size),
                     int((virtual_cy - 0.5) * self.cell_size))
         raise TypeError("Wrong argument.")
 
-    def draw_no(self, x, y, no):
-        (real_x, real_y) = self.transform_axis((x, y), arg='virtual')
+    def draw_no(self, coord, content):
+        (real_x, real_y) = self.transform_axis(coord, arg='virtual')
         font_size = int(self.cell_size * 0.3)
         self.room_canvas.create_text((real_x, real_y),
-                                     text="%d" % no,
+                                     text="{}".format(content),
                                      fill=self.color_set["font_color"],
                                      font=('Menlo', '%s' % font_size))
         circle_x_0, circle_x_1 = (real_x - int(font_size * 0.6),

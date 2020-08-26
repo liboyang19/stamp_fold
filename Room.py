@@ -6,14 +6,15 @@ class Room:
     房间类，包含 X 型房间和 Y 型房间。
     """
 
-    def __init__(self, width: int, height: int):
+    def __init__(self, width: int, height: int, mode=False):
         self._width = width
         self._height = height
         self._control_points = []
         self._routines = []
         self._orders = []
-        self._suite_x = Suite(self._width, self._height)
-        self._suite_y = Suite(self._height, self._width)
+        self._begin_end_mode = mode
+        self._suite_x = Suite(self._width, self._height, self._begin_end_mode)
+        self._suite_y = Suite(self._height, self._width, self._begin_end_mode)
 
     @property
     def orders(self):
@@ -26,6 +27,14 @@ class Room:
     @property
     def control_points(self):
         return self._control_points
+
+    @property
+    def begin_end_mode(self):
+        return self._begin_end_mode
+
+    @begin_end_mode.setter
+    def begin_end_mode(self, mode):
+        self._begin_end_mode = mode
 
     @control_points.setter
     def control_points(self, control_points_list: list):
@@ -41,6 +50,8 @@ class Room:
         开始运行
         :return:
         """
+        self._suite_x.begin_end_mode = self.begin_end_mode
+        self._suite_y.begin_end_mode = self.begin_end_mode
         # 将控制点坐标输给 X 房间
         self._suite_x.control_points = self.control_points
         # 进行计算，结果保存在 X 房间类中，还未提取
