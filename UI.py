@@ -103,15 +103,15 @@ class Application(tk.Frame):
 
     def create_info(self):
         self.tip_info1 = tk.Label(self.info_region)
-        self.tip_info1["text"] = "请输入房间大小信息："
+        self.tip_info1["text"] = "Input the size of the room: "
         self.tip_info1.grid(row=0, column=0, columnspan=2, padx=0, pady=0)
 
         self.input_width_text = tk.Label(self.info_region)
-        self.input_width_text["text"] = "宽："
+        self.input_width_text["text"] = "Width: "
         self.input_width_text.grid(row=1, column=0)
 
         self.input_height_text = tk.Label(self.info_region)
-        self.input_height_text["text"] = "长："
+        self.input_height_text["text"] = "Height: "
         self.input_height_text.grid(row=2, column=0)
 
         self.input_width = tk.Entry(self.info_region, width=5)
@@ -123,7 +123,7 @@ class Application(tk.Frame):
         tk.Label(self.info_region, text="").grid(row=3, column=0)
 
         self.generate_bt = tk.Button(self.info_region)
-        self.generate_bt["text"] = "生成房间"
+        self.generate_bt["text"] = "Generate Room"
         self.generate_bt["command"] = self.generate_room
         self.generate_bt.grid(row=4, column=1)
 
@@ -135,14 +135,14 @@ class Application(tk.Frame):
             tk.Label(self.info_region, text="").grid(row=i, column=0)
 
         self.confirm_bt = tk.Button(self.info_region)
-        self.confirm_bt["text"] = "确定"
+        self.confirm_bt["text"] = "Confirm"
         self.confirm_bt["command"] = self.confirm
         self.confirm_bt.grid(row=end_row, column=1)
 
         tk.Label(self.info_region, text="").grid(row=end_row + 1, column=0)
 
         self.next_bt = tk.Button(self.info_region)
-        self.next_bt["text"] = "下一页"
+        self.next_bt["text"] = "Next"
         self.next_bt["command"] = self.next_page
         self.next_bt.grid(row=end_row + 2, column=1)
 
