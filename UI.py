@@ -122,14 +122,22 @@ class Application(tk.Frame):
 
         tk.Label(self.info_region, text="").grid(row=3, column=0)
 
+        self.is_ht = tk.IntVar()
+        self.ht_checkbtn = tk.Checkbutton(self.info_region,
+                                          text="Begin/End Mode",
+                                          variable=self.is_ht)
+        self.ht_checkbtn.grid(row=4, column=0, columnspan=2)
+
+        tk.Label(self.info_region, text="").grid(row=5, column=0)
+
         self.generate_bt = tk.Button(self.info_region)
         self.generate_bt["text"] = "Generate Room"
         self.generate_bt["command"] = self.generate_room
-        self.generate_bt.grid(row=4, column=1)
+        self.generate_bt.grid(row=6, column=1)
 
         # 占位
         interval = 5
-        start_row = 5
+        start_row = 7
         end_row = start_row + interval
         for i in range(start_row, end_row):
             tk.Label(self.info_region, text="").grid(row=i, column=0)
@@ -147,11 +155,7 @@ class Application(tk.Frame):
         self.next_bt.grid(row=end_row + 2, column=1)
 
         # 用该变量判断是否为起终点模式
-        self.is_ht = tk.IntVar()
-        self.ht_checkbtn = tk.Checkbutton(self.info_region,
-                                          text="Begin/End Mode",
-                                          variable=self.is_ht)
-        self.ht_checkbtn.grid(row=end_row + 3, column=1)
+
 
     def set_control_points(self, event):
         self.room_canvas.focus_set()
