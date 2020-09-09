@@ -45,6 +45,18 @@ class Room:
         """
         self._control_points = list(control_points_list)
 
+    def random(self):
+        """
+        随机生成一条路径
+        :return: 输出随机生成的路径
+        """
+        # TODO X Y 型需不需要都考虑
+        # 先确定是否为起终点模式
+        self._suite_x.begin_end_mode = self.begin_end_mode
+        # 将控制点坐标传给 X 房间
+        self._suite_x.control_points = self.control_points
+        return self._suite_x.random()
+
     def run(self):
         """
         开始运行

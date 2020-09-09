@@ -135,9 +135,14 @@ class Application(tk.Frame):
         self.generate_bt["command"] = self.generate_room
         self.generate_bt.grid(row=6, column=1)
 
+        self.random_bt = tk.Button(self.info_region)
+        self.random_bt["text"] = "Random"
+        self.random_bt["command"] = self.random
+        self.random_bt.grid(row=7, column=1)
+
         # 占位
         interval = 5
-        start_row = 7
+        start_row = 8
         end_row = start_row + interval
         for i in range(start_row, end_row):
             tk.Label(self.info_region, text="").grid(row=i, column=0)
@@ -156,6 +161,28 @@ class Application(tk.Frame):
 
         # 用该变量判断是否为起终点模式
 
+    def random(self):
+        """
+        先试一下
+        :return:
+        """
+        # TODO 这个一定要改
+        self.room.control_points = self.begin_point + self.control_points + self.end_point
+        self.room.begin_end_mode = bool(self.is_ht.get())
+        print("计算中...")
+        self.routines = deque()
+        rt = self.room.random()
+        if not rt:
+            print("Routines not found.")
+        self.routines.append(rt)
+        self.room_canvas.delete("all")
+        self.create_cell()
+        if self.is_ht.get():
+            self.draw_no(self.begin_point[0], 'B')
+            self.draw_no(self.end_point[0], 'E')
+        for i, c in enumerate(self.control_points, 1):
+            self.draw_no(c, i)
+        self.draw_routine()
 
     def set_control_points(self, event):
         self.room_canvas.focus_set()
