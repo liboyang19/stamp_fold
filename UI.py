@@ -306,7 +306,7 @@ class Application(tk.Frame):
         condition = self.room_type_box.get()
         if condition == self.info_set["room_type_box"][0]:
             # 如果是 X 型，则规定所有点不能在同一行
-            if p[0] in self.points_x:
+            if p[1] in self.points_y:
                 return False
             else:
                 self.points_x.add(p[0])
@@ -314,7 +314,7 @@ class Application(tk.Frame):
                 return True
         elif condition == self.info_set["room_type_box"][1]:
             # 如果是 Y 型，则规定所有点不能在同一列
-            if p[1] in self.points_y:
+            if p[0] in self.points_x:
                 return False
             else:
                 self.points_x.add(p[0])
