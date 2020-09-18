@@ -6,15 +6,20 @@ class Room:
     房间类，包含 X 型房间和 Y 型房间。
     """
 
-    def __init__(self, width: int, height: int, mode=False):
+    def __init__(self, width: int, height: int, mode=False, suite_type='X/Y mode'):
         self._width = width
         self._height = height
         self._control_points = []
         self._routines = []
         self._orders = []
+        self._suite_type = suite_type
         self._begin_end_mode = mode
         self._suite_x = Suite(self._width, self._height, self._begin_end_mode)
         self._suite_y = Suite(self._height, self._width, self._begin_end_mode)
+
+    @property
+    def suite_type(self):
+        return self._suite_type
 
     @property
     def orders(self):
@@ -36,6 +41,10 @@ class Room:
     def begin_end_mode(self, mode):
         self._begin_end_mode = mode
 
+    @suite_type.setter
+    def suite_type(self, suite_type):
+        self._suite_type = suite_type
+
     @control_points.setter
     def control_points(self, control_points_list: list):
         """
@@ -44,6 +53,18 @@ class Room:
         :return:
         """
         self._control_points = list(control_points_list)
+
+    def random(self):
+        """
+        随机生成一条路径
+        :return: 输出随机生成的路径
+        """
+        # TODO X Y 型需不需要都考虑
+        # 先确定是否为起终点模式
+        self._suite_x.begin_end_mode = self.begin_end_mode
+        # 将控制点坐标传给 X 房间
+        self._suite_x.control_points = self.control_points
+        return self._suite_x.random()
 
     def run(self):
         """
@@ -54,16 +75,25 @@ class Room:
         self._suite_y.begin_end_mode = self.begin_end_mode
         # 将控制点坐标输给 X 房间
         self._suite_x.control_points = self.control_points
-        # 进行计算，结果保存在 X 房间类中，还未提取
-        self._suite_x.run()
         # 控制点转换并传递到 Y 房间
         self._suite_y.control_points = self._rotate_points(self.control_points)
-        # 继续进行计算
-        self._suite_y.run()
+
+        if self.suite_type == 'X mode':
+            # 进行计算，结果保存在 X 房间类中，还未提取
+            self._suite_x.run()
+        elif self.suite_type == 'Y mode':
+            # 进行计算，结果保存在 Y 房间类中，还未提取
+            self._suite_y.run()
+        elif self.suite_type == 'X/Y mode':
+            self._suite_x.run()
+            self._suite_y.run()
+        else:
+            raise ValueError("房间类型参数错误: %s" % self.suite_type)
         # 提取计算结果，保存到 orders 和 routines 中
         self._merge()
 
-    def _rotate_points(self, cp) -> list:
+    @staticmethod
+    def _rotate_points(cp) -> list:
         """
         将 X 型控制点转换为 Y 型控制点坐标
         :return:
@@ -83,6 +113,7 @@ class Room:
         [self._routines.append(x) for x in self._suite_x.routines]
         for x in self._suite_y.routines:
             self._routines.append(self._rotate_points(x))
+
 
 if __name__ == '__main__':
     r = Room(10, 10)

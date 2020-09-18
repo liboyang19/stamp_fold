@@ -2,6 +2,7 @@ from collections import deque
 import numpy as np
 from itertools import combinations
 from Order import Order
+import random
 
 
 class Suite:
@@ -191,15 +192,9 @@ class Suite:
             else:
                 strip_len = ref_c[0]
                 if strip_len > 0:
-                    try:
-                        stamp_matrix[start_y - 1,
-                        start_x - 1:end_x] = ref_strip[i:i + strip_len + 1]
-                    except ValueError:
-                        # return False
-                        print(i, routine)
-                        raise ValueError("Error")
+                    stamp_matrix[start_y - 1,start_x - 1:end_x] = ref_strip[i:i + strip_len + 1]
                 if strip_len < 0:
-                    stamp_matrix[start_y - 1, end_x - 1:start_x] = ref_strip[i:i-strip_len+1][::-1]
+                    stamp_matrix[start_y - 1, end_x - 1:start_x] = ref_strip[i:i - strip_len+1][::-1]
             i += np.abs(strip_len)
         cp_row = [t[1] - 1 for t in self.control_points]
         cp_col = [t[0] - 1 for t in self.control_points]
@@ -209,15 +204,87 @@ class Suite:
                 return False
         return np.array_equal(cp_ranks, np.sort(cp_ranks))
 
+    def random(self):
+        """
+        随机输出一条路径
+        :return:
+        """
+        self._get_cp_rank()
+        # 创建一个初始池子，形式为
+        # [([1, 2, 3, 0], [3]), ([1, 2, 0, 3], [2]), ... ,]
+        init_pool = []
+        # 先将控制点的顺序固定好
+        folder_set = set(range(self._height))
+        # TODO 起终点固定一下
+        # 控制点在array中的索引
+        iter_index = combinations(range(self._height),
+                                  len(self._control_points_rank))
+
+        for item in iter_index:
+            # 创建一个数组
+            arr = np.zeros(self._height, dtype=int)
+            arr[list(item)] = self._control_points_rank
+            # 为零的索引
+            insert_index = deque(list(folder_set - set(item)))
+            if self.arr_checker(arr):
+                init_pool.append((arr, insert_index))
+        # 结果为：[([1, 2, 3, 0], [3]), ([1, 2, 0, 3], [2]), ... ,]
+
+        max_iter = 10000
+        for i in range(max_iter):
+            if i % 100 == 0:
+                print("正在计算第 %d 次" % i)
+            able_arr = init_pool
+            insert_no = set(range(1, self._height + 1)) - set(self._control_points_rank)
+            # 当可行集不为空时，执行循环
+            while able_arr:
+                # 从可行集中挑出一个解
+                bingo_arr = random.choice(able_arr)
+                # 把解拆包
+                zero_index = bingo_arr[1]
+                cur_arr = bingo_arr[0]
+                # 如果没有地方插数字，则表示已经完成
+                if not zero_index:
+                    cur_order = Order(cur_arr)
+                    # 得到左右路径
+                    r_rout, l_rout = self._get_routine(cur_order)
+                    output_rout_list = []
+                    # 判断左右路径是否可行，如果可行，则添加到可行集里
+                    if self._kernel(r_rout):
+                        output_rout_list.append(r_rout)
+                    if self._kernel(l_rout):
+                        output_rout_list.append(l_rout)
+                    if output_rout_list:
+                        return random.choice(output_rout_list)
+                    else:
+                        break
+                able_arr = []
+                cur_no = insert_no.pop()
+                # 遍历每一个零索引
+                loop_times = len(zero_index)
+                for j in range(loop_times):
+                    zero_i = zero_index.popleft()
+                    cur_arr[zero_i] = cur_no
+                    if self.arr_checker(cur_arr):
+                        able_arr.append((cur_arr.copy(), zero_index.copy()))
+                    # 还原该数组
+                    cur_arr[zero_i] = 0
+                    zero_index.append(zero_i)
+        print("计算完了 要返回了")
+        return []
+
     def _create_init(self):
         # 创建两个池子，一个放数组，一个放插入位置的索引
         arr_pool = deque()
         index_pool = deque()
         # 先将控制点的顺序固定好
         folder_set = set(range(self._height))
+        # TODO 起终点固定一下
+        # 控制点的索引
         iter_index = combinations(range(self._height),
                                   len(self._control_points_rank))
         insert_no = set(range(1, self._height + 1)) - set(self._control_points_rank)
+
         # 把池子初始化
         # 例如，self._control_points_rank = [1, 2], self._height = 3
         # 初始化后的结果为：
@@ -228,6 +295,7 @@ class Suite:
         for item in iter_index:
             arr = np.zeros(self._height, dtype=int)
             arr[list(item)] = self._control_points_rank
+            # 为零的索引
             insert_index = deque(folder_set - set(item))
             if self.arr_checker(arr):
                 arr_pool.append(arr)
