@@ -191,13 +191,7 @@ class Suite:
             else:
                 strip_len = ref_c[0]
                 if strip_len > 0:
-                    try:
-                        stamp_matrix[start_y - 1,
-                        start_x - 1:end_x] = ref_strip[i:i + strip_len + 1]
-                    except ValueError:
-                        # return False
-                        print(i, routine)
-                        raise ValueError("Error")
+                    stamp_matrix[start_y - 1,start_x - 1:end_x] = ref_strip[i:i + strip_len + 1]
                 if strip_len < 0:
                     stamp_matrix[start_y - 1, end_x - 1:start_x] = ref_strip[i:i-strip_len+1][::-1]
             i += np.abs(strip_len)
@@ -261,6 +255,8 @@ class Suite:
                 except IndexError:
                     return
 
+        arr_pool.appendleft(temp_arr)
+        index_pool.appendleft(temp_index)
         while arr_pool:
             address = arr_pool.pop()
             self._init_orders.append(Order(address))
