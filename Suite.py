@@ -255,6 +255,8 @@ class Suite:
                 except IndexError:
                     return
 
+        arr_pool.appendleft(temp_arr)
+        index_pool.appendleft(temp_index)
         while arr_pool:
             address = arr_pool.pop()
             self._init_orders.append(Order(address))
