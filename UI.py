@@ -204,6 +204,13 @@ class Application(tk.Frame):
         self.next_bt.config(state='disabled')
         self.next_bt.grid(row=14, column=1)
 
+        tk.Label(self.info_region, text="").grid(row=15, column=0)
+
+        self.random_bt = tk.Button(self.info_region)
+        self.random_bt["text"] = self.info_set["random_bt"]
+        self.random_bt["command"] = self.random
+        self.random_bt.grid(row=16, column=1)
+
     def set_control_points(self, event):
         # 设置控制点
         self.room_canvas.focus_set()
@@ -284,19 +291,65 @@ class Application(tk.Frame):
         for i, c in enumerate(self.control_points, 1):
             self.draw_no(c, i, self.color_set["control_points"])
 
+    def random(self):
+        """
+        随机选择一条路径
+        :return:
+        """
+        # 上传信息
+        self.update_info()
+        self.pre_compute()
+        self.in_random_compute()
+
+    def in_random_compute(self):
+        """
+        进行随机巡径，并输出结果
+        :return:
+        """
+        self.room.random()
+        # print("计算完毕...")
+        self.message.insert(tk.END, self.info_set['finish'])
+        # 可以使用下一页按钮
+        self.next_bt.config(state='normal')
+        self.routines = deque()
+        self.routines.append(self.room.random_routine)
+        if not self.routines:
+            self.message.insert(tk.END, self.info_set["not_found"])
+        else:
+            self.message.insert(tk.END, self.info_set["random_found"])
+        self.after_compute()
+
+    def after_compute(self):
+        """
+        输出计算结果
+        :return:
+        """
+        self.counter = 0
+        self.message.insert(tk.END, " \n")
+        self.next_page()
+        self.generate_bt.config(state='normal')
+        self.random_bt.config(state='normal')
+
     def confirm(self):
         """
         开始寻找路径
         :return:
         """
         # 进行计算前的一些设置，并打印当前状态
-        self.room.control_points = self.begin_point + self.control_points + self.end_point
-        self.room.begin_end_mode = bool(self.is_ht.get())
-        self.room.suite_type = self.room_type_box.get()
+        self.update_info()
         pre_compute_thread = threading.Thread(target=self.pre_compute, name='pre_compute')
         in_compute_thread = threading.Thread(target=self.in_compute, name='in_compute')
         pre_compute_thread.start()
         in_compute_thread.start()
+
+    def update_info(self):
+        """
+        将房间信息传递到房间类中
+        :return:
+        """
+        self.room.control_points = self.begin_point + self.control_points + self.end_point
+        self.room.begin_end_mode = bool(self.is_ht.get())
+        self.room.suite_type = self.room_type_box.get()
 
     def pre_compute(self):
         """
@@ -307,6 +360,7 @@ class Application(tk.Frame):
         print("计算中...")
         self.message.insert(tk.END, self.info_set['computing'])
         self.confirm_bt.config(state='disabled')
+        self.random_bt.config(state='disabled')
 
     def in_compute(self):
         """
@@ -323,10 +377,7 @@ class Application(tk.Frame):
             self.message.insert(tk.END, self.info_set["not_found"])
         else:
             self.message.insert(tk.END, "%s routines found.\n" % len(self.routines))
-        self.counter = 0
-        self.message.insert(tk.END, " \n")
-        self.next_page()
-        self.generate_bt.config(state='normal')
+        self.after_compute()
 
     def points_checker(self, p):
         """
@@ -533,6 +584,8 @@ class Application(tk.Frame):
         self.info_set["finish"] = "Complete!\n"
         self.info_set["not_found"] = "No routine found.\n"
         self.info_set["input_size"] = "3 4 5 6 7 8 9 10 11 12".split()
+        self.info_set["random_bt"] = "Random"
+        self.info_set["random_found"] = "Random routine found."
 
 
 if __name__ == '__main__':
