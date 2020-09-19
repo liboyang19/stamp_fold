@@ -215,7 +215,7 @@ class Suite:
                 return False
         return np.array_equal(cp_ranks, np.sort(cp_ranks))
 
-    def _find_one_routine(self, arr: list, rou: list) -> bool:
+    def _find_one_routine(self, arr: Order, rou: list) -> bool:
         """
         判断某个已经到了n折的排列是不是符合最后的实际要求，如果符合返回True并将路径存在rou中
         如果不符合返回False，并且不去修改rou中的值
@@ -229,8 +229,7 @@ class Suite:
         if self._kernel(left_r):
             temp_result.append(left_r)
         if temp_result:
-            random.shuffle(temp_result)
-            rou.append(temp_result.pop())
+            rou.append(random.choice(temp_result))
             return True
         else:
             return False
@@ -241,6 +240,7 @@ class Suite:
         :return:
         """
         # 调用创建池子，获得初始的深度优先搜索的栈
+        self._get_cp_rank()
         arr_pool, index_pool, insert_no = self._get_init_pool()
         # 将arr_pool和index_pool打包存在初始栈中
         init_stack = deque()
@@ -255,7 +255,7 @@ class Suite:
             self._random_routine = routine_result.copy()
             self._random_order.append(order_result)
 
-    def _prepare_for_random(self, stack_space: deque, insert_no: deque, result: list):
+    def _prepare_for_random(self, stack_space: list, insert_no: set, result: list):
         """
         递归函数，目的是为了寻找一条合适的路径就停下来，如果递归结束都没有找到，那就输出不存在
         注意：现在还没有考虑递归深度的问题
@@ -285,13 +285,14 @@ class Suite:
             else:
                 # 这里其实也可以对插入数字的队列进行洗牌，显得更加的随机
                 curr_insert_no = insert_no.pop()
+                random.shuffle(stack_space)
                 while stack_space and (not self._random_flag):
                     # 弹出一个，进行操作
                     temp_item = stack_space.pop()
-                    temp_address = temp_item[0]
-                    temp_index = temp_item[1]
+                    temp_address = temp_item[0].copy()
+                    temp_index = deque(temp_item[1].copy())
                     # 下面进行插入操作，可行结果放到新的stack中，进行后续递归
-                    new_stack_space = deque()
+                    new_stack_space = []
                     # 循环进行几次，取决有有多少个空位
                     loop_times = len(temp_index)
                     for i in range(loop_times):
@@ -304,7 +305,7 @@ class Suite:
                         temp_address[curr_index] = 0
                         temp_index.append(curr_index)
                     # 某一个排列对应的next的新表做好了以后，直接递归调用求下一次的
-                    self._prepare_for_random(new_stack_space, insert_no, result)
+                    self._prepare_for_random(new_stack_space, insert_no.copy(), result)
 
     def _get_init_pool(self):
         """
