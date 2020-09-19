@@ -1,6 +1,8 @@
 import tkinter as tk
 from collections import deque
 from Room import Room
+import threading
+import time
 from Order import Order
 from tkinter import ttk
 
@@ -123,13 +125,27 @@ class Application(tk.Frame):
         self.input_height_text["text"] = self.info_set["input_height_text"]
         self.input_height_text.grid(row=2, column=0)
 
-        self.input_width = tk.Entry(self.info_region, width=5)
-        self.input_width.insert(0, '5')
+        self.input_width = ttk.Combobox(self.info_region, width=5)
+        self.input_width['value'] = self.info_set["input_size"]
+        self.input_width['state'] = 'readonly'
+        # 默认是 5 * 5 的房间
+        self.input_width.current(2)
         self.input_width.grid(row=1, column=1)
 
-        self.input_height = tk.Entry(self.info_region, width=5)
-        self.input_height.insert(0, '5')
+        self.input_height = ttk.Combobox(self.info_region, width=5)
+        self.input_height['value'] = self.info_set["input_size"]
+        self.input_height['state'] = 'readonly'
+        # 默认是 5 * 5 的房间
+        self.input_height.current(2)
         self.input_height.grid(row=2, column=1)
+
+        # self.input_width = tk.Entry(self.info_region, width=5)
+        # self.input_width.insert(0, '5')
+        # self.input_width.grid(row=1, column=1)
+
+        # self.input_height = tk.Entry(self.info_region, width=5)
+        # self.input_height.insert(0, '5')
+        # self.input_height.grid(row=2, column=1)
 
         tk.Label(self.info_region, text="").grid(row=3, column=0)
 
@@ -147,7 +163,7 @@ class Application(tk.Frame):
         self.room_type_box['value'] = self.info_set["room_type_box"]
         self.room_type_box['state'] = 'readonly'
         # 默认是X Y 型都计算
-        self.room_type_box.current(2)
+        self.room_type_box.current(0)
         self.room_type_box.grid(row=6, column=0, columnspan=2)
 
         tk.Label(self.info_region, text="").grid(row=7, column=0)
@@ -243,8 +259,7 @@ class Application(tk.Frame):
         """
         self.room_canvas.destroy()
         # 解除锁定
-        self.ht_checkbtn.config(state='normal')
-        self.room_type_box.config(state='readonly')
+        self.unlock()
         self.control_points = []
         self.begin_point = []
         self.end_point = []
@@ -274,14 +289,30 @@ class Application(tk.Frame):
         开始寻找路径
         :return:
         """
-        # 锁定现有选项，避免产生动态错误
-        self.lock()
+        # 进行计算前的一些设置，并打印当前状态
         self.room.control_points = self.begin_point + self.control_points + self.end_point
         self.room.begin_end_mode = bool(self.is_ht.get())
-        # print("计算中...")
-        self.message.insert(tk.END, self.info_set['computing'])
-        # 设置计算样式
         self.room.suite_type = self.room_type_box.get()
+        pre_compute_thread = threading.Thread(target=self.pre_compute, name='pre_compute')
+        in_compute_thread = threading.Thread(target=self.in_compute, name='in_compute')
+        pre_compute_thread.start()
+        in_compute_thread.start()
+
+    def pre_compute(self):
+        """
+        进行计算前的准备工作
+        :return:
+        """
+        self.lock()
+        print("计算中...")
+        self.message.insert(tk.END, self.info_set['computing'])
+        self.confirm_bt.config(state='disabled')
+
+    def in_compute(self):
+        """
+        进行计算，并输出计算结果
+        :return:
+        """
         self.room.run()
         # print("计算完毕...")
         self.message.insert(tk.END, self.info_set['finish'])
@@ -295,7 +326,7 @@ class Application(tk.Frame):
         self.counter = 0
         self.message.insert(tk.END, " \n")
         self.next_page()
-        # print(self.room.routines)
+        self.generate_bt.config(state='normal')
 
     def points_checker(self, p):
         """
@@ -461,7 +492,18 @@ class Application(tk.Frame):
         """
         self.ht_checkbtn.config(state='disabled')
         self.room_type_box.config(state='disabled')
+        self.generate_bt.config(state='disabled')
         self.room_canvas.unbind("<Button-1>")
+
+    def unlock(self):
+        """
+        解锁操作
+        :return:
+        """
+        self.ht_checkbtn.config(state='normal')
+        self.room_type_box.config(state='readonly')
+        self.confirm_bt.config(state='normal')
+        self.generate_bt.config(state='normal')
 
     def color_config(self):
         # 所有的用户设置
@@ -490,6 +532,7 @@ class Application(tk.Frame):
         self.info_set["computing"] = "Computing...\n"
         self.info_set["finish"] = "Complete!\n"
         self.info_set["not_found"] = "No routine found.\n"
+        self.info_set["input_size"] = "3 4 5 6 7 8 9 10 11 12".split()
 
 
 if __name__ == '__main__':
