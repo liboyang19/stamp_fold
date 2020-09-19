@@ -143,7 +143,8 @@ class Room:
 
 
 if __name__ == '__main__':
-    r = Room(10, 10)
-    r.control_points = [(3, 1), (4, 10), (3, 5), (4, 6), (6, 9), (5, 2)]
-    r.run()
-    # print(r.routines)
+    r = Room(5, 5)
+    r.control_points = []
+    for i in range(10):
+        r.random()
+        print(r.random_routine)

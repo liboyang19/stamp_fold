@@ -439,3 +439,11 @@ class Suite:
         :return:
         """
         pass
+
+
+if __name__ == '__main__':
+    r = Suite(10, 10)
+    r.control_points = [(1,2)]
+    for i in range(10):
+        r.random()
+        print(r.random_routine)
