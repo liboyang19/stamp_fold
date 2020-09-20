@@ -155,9 +155,9 @@ class Application(tk.Frame):
         self.ht_checkbtn = tk.Checkbutton(self.info_region,
                                           text=self.info_set["ht_checkbtn"],
                                           variable=self.is_ht)
-        self.ht_checkbtn.grid(row=4, column=0, columnspan=2)
-
-        tk.Label(self.info_region, text="").grid(row=5, column=0)
+        # self.ht_checkbtn.grid(row=4, column=0, columnspan=2)
+        tk.Label(self.info_region, text="").grid(row=4, column=0)
+        # tk.Label(self.info_region, text="").grid(row=5, column=0)
 
         # 设置下拉框，用以选择计算模式
         self.room_type_box = ttk.Combobox(self.info_region, width=10)
@@ -194,7 +194,7 @@ class Application(tk.Frame):
         self.confirm_bt = tk.Button(self.info_region)
         self.confirm_bt["text"] = self.info_set["confirm_bt"]
         self.confirm_bt["command"] = self.confirm
-        self.confirm_bt.grid(row=12, column=1)
+        self.confirm_bt.grid(row=12, column=0)
 
         tk.Label(self.info_region, text="").grid(row=13, column=0)
 
@@ -203,7 +203,7 @@ class Application(tk.Frame):
         self.next_bt["command"] = self.next_page
         # 此按钮在计算完成前不能使用
         self.next_bt.config(state='disabled')
-        self.next_bt.grid(row=14, column=1)
+        self.next_bt.grid(row=12, column=1)
 
         tk.Label(self.info_region, text="").grid(row=15, column=0)
 
@@ -211,6 +211,8 @@ class Application(tk.Frame):
         self.random_bt["text"] = self.info_set["random_bt"]
         self.random_bt["command"] = self.random
         self.random_bt.grid(row=16, column=1)
+
+        tk.Label(self.info_region, text="").grid(row=17, column=0)
 
     def set_control_points(self, event):
         # 设置控制点
@@ -595,7 +597,7 @@ class Application(tk.Frame):
         self.info_set["input_height_text"] = "Height: "
         self.info_set["ht_checkbtn"] = "Begin/End Mode"
         self.info_set["generate_bt"] = "Reset"
-        self.info_set["confirm_bt"] = "Confirm"
+        self.info_set["confirm_bt"] = "Find All"
         self.info_set["next_bt"] = "Next"
         self.info_set["room_type_box"] = ("X mode", "Y mode", "X/Y mode")
         self.info_set["select_points"] = "Selecting points...\n"
