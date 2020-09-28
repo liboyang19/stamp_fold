@@ -40,6 +40,7 @@ class Application(tk.Frame):
         # 生成房子
         # 前面的全局变量需要恢复
         self.generate_room()
+        self.LOCK = threading.Lock()
 
     def draw_surface(self):
         """
@@ -154,9 +155,9 @@ class Application(tk.Frame):
         self.ht_checkbtn = tk.Checkbutton(self.info_region,
                                           text=self.info_set["ht_checkbtn"],
                                           variable=self.is_ht)
-        self.ht_checkbtn.grid(row=4, column=0, columnspan=2)
-
-        tk.Label(self.info_region, text="").grid(row=5, column=0)
+        # self.ht_checkbtn.grid(row=4, column=0, columnspan=2)
+        tk.Label(self.info_region, text="").grid(row=4, column=0)
+        # tk.Label(self.info_region, text="").grid(row=5, column=0)
 
         # 设置下拉框，用以选择计算模式
         self.room_type_box = ttk.Combobox(self.info_region, width=10)
@@ -193,7 +194,7 @@ class Application(tk.Frame):
         self.confirm_bt = tk.Button(self.info_region)
         self.confirm_bt["text"] = self.info_set["confirm_bt"]
         self.confirm_bt["command"] = self.confirm
-        self.confirm_bt.grid(row=12, column=1)
+        self.confirm_bt.grid(row=12, column=0)
 
         tk.Label(self.info_region, text="").grid(row=13, column=0)
 
@@ -202,7 +203,16 @@ class Application(tk.Frame):
         self.next_bt["command"] = self.next_page
         # 此按钮在计算完成前不能使用
         self.next_bt.config(state='disabled')
-        self.next_bt.grid(row=14, column=1)
+        self.next_bt.grid(row=12, column=1)
+
+        tk.Label(self.info_region, text="").grid(row=15, column=0)
+
+        self.random_bt = tk.Button(self.info_region)
+        self.random_bt["text"] = self.info_set["random_bt"]
+        self.random_bt["command"] = self.random
+        self.random_bt.grid(row=16, column=1)
+
+        tk.Label(self.info_region, text="").grid(row=17, column=0)
 
     def set_control_points(self, event):
         # 设置控制点
@@ -249,7 +259,7 @@ class Application(tk.Frame):
         self.room_height = int(self.input_height.get())
         self.room_width = int(self.input_width.get())
         self.create_room()
-        self.room = Room(height=self.room_height, width=self.room_width,)
+        self.update_info()
         self.message.insert(tk.END, self.info_set["select_points"])
 
     def clean_room(self):
@@ -265,7 +275,7 @@ class Application(tk.Frame):
         self.end_point = []
         self.points_x = set()
         self.points_y = set()
-        self.message.delete(0.0, tk.END)
+        self.clear_board()
         # 安排锁定
         self.next_bt.config(state='disabled')
 
@@ -273,7 +283,7 @@ class Application(tk.Frame):
         if not self.routines:
             return
         self.counter = (self.counter % len(self.routines)) + 1
-        self.message.delete(5.0, 6.0)
+        self.message.delete(4.0, 5.0)
         self.message.insert(tk.END, "%s / %s\n" % (self.counter, len(self.routines)))
         self.room_canvas.delete("all")
         self.create_cell()
@@ -290,13 +300,75 @@ class Application(tk.Frame):
         :return:
         """
         # 进行计算前的一些设置，并打印当前状态
-        self.room.control_points = self.begin_point + self.control_points + self.end_point
-        self.room.begin_end_mode = bool(self.is_ht.get())
-        self.room.suite_type = self.room_type_box.get()
+        self.clear_board()
+        self.update_info()
         pre_compute_thread = threading.Thread(target=self.pre_compute, name='pre_compute')
         in_compute_thread = threading.Thread(target=self.in_compute, name='in_compute')
         pre_compute_thread.start()
         in_compute_thread.start()
+
+    def clear_board(self):
+        """
+        清除消息框
+        :return:
+        """
+        self.message.delete(0.0, tk.END)
+
+    def random(self):
+        """
+        随机选择一条路径
+        :return:
+        """
+        # 上传信息
+        self.clear_board()
+        self.update_info()
+        pre_compute_thread = threading.Thread(target=self.pre_compute, name='pre_random_compute')
+        in_compute_thread = threading.Thread(target=self.in_random_compute, name='in_random_compute')
+        pre_compute_thread.start()
+        in_compute_thread.start()
+
+    def in_random_compute(self):
+        """
+        进行随机巡径，并输出结果
+        :return:
+        """
+        # 防止粘包
+        time.sleep(0.01)
+        self.room.random()
+        # print("计算完毕...")
+        self.message.insert(tk.END, self.info_set['finish'])
+        # 可以使用下一页按钮
+        self.next_bt.config(state='normal')
+        self.routines = deque()
+        if self.room.random_routine:
+            self.routines.append(self.room.random_routine)
+        if not self.routines:
+            self.message.insert(tk.END, self.info_set["not_found"])
+        else:
+            self.message.insert(tk.END, self.info_set["random_found"])
+        self.after_compute()
+
+    def after_compute(self):
+        """
+        输出计算结果
+        :return:
+        """
+        self.counter = 0
+        self.message.insert(tk.END, " \n")
+        self.next_page()
+        self.generate_bt.config(state='normal')
+        self.random_bt.config(state='normal')
+        self.confirm_bt.config(state='normal')
+
+    def update_info(self):
+        """
+        将房间信息传递到房间类中
+        :return:
+        """
+        self.room = Room(height=self.room_height, width=self.room_width, )
+        self.room.control_points = self.begin_point + self.control_points + self.end_point
+        self.room.begin_end_mode = bool(self.is_ht.get())
+        self.room.suite_type = self.room_type_box.get()
 
     def pre_compute(self):
         """
@@ -304,15 +376,16 @@ class Application(tk.Frame):
         :return:
         """
         self.lock()
-        print("计算中...")
+        # print("计算中...")
         self.message.insert(tk.END, self.info_set['computing'])
-        self.confirm_bt.config(state='disabled')
 
     def in_compute(self):
         """
         进行计算，并输出计算结果
         :return:
         """
+        # 防止粘包
+        time.sleep(0.01)
         self.room.run()
         # print("计算完毕...")
         self.message.insert(tk.END, self.info_set['finish'])
@@ -323,10 +396,7 @@ class Application(tk.Frame):
             self.message.insert(tk.END, self.info_set["not_found"])
         else:
             self.message.insert(tk.END, "%s routines found.\n" % len(self.routines))
-        self.counter = 0
-        self.message.insert(tk.END, " \n")
-        self.next_page()
-        self.generate_bt.config(state='normal')
+        self.after_compute()
 
     def points_checker(self, p):
         """
@@ -493,6 +563,8 @@ class Application(tk.Frame):
         self.ht_checkbtn.config(state='disabled')
         self.room_type_box.config(state='disabled')
         self.generate_bt.config(state='disabled')
+        self.confirm_bt.config(state='disabled')
+        self.random_bt.config(state='disabled')
         self.room_canvas.unbind("<Button-1>")
 
     def unlock(self):
@@ -525,7 +597,7 @@ class Application(tk.Frame):
         self.info_set["input_height_text"] = "Height: "
         self.info_set["ht_checkbtn"] = "Begin/End Mode"
         self.info_set["generate_bt"] = "Reset"
-        self.info_set["confirm_bt"] = "Confirm"
+        self.info_set["confirm_bt"] = "Find All"
         self.info_set["next_bt"] = "Next"
         self.info_set["room_type_box"] = ("X mode", "Y mode", "X/Y mode")
         self.info_set["select_points"] = "Selecting points...\n"
@@ -533,6 +605,8 @@ class Application(tk.Frame):
         self.info_set["finish"] = "Complete!\n"
         self.info_set["not_found"] = "No routine found.\n"
         self.info_set["input_size"] = "3 4 5 6 7 8 9 10 11 12".split()
+        self.info_set["random_bt"] = "Random"
+        self.info_set["random_found"] = "Random routine found.\n"
 
 
 if __name__ == '__main__':

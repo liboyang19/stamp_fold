@@ -1,4 +1,5 @@
 from Suite import Suite
+import random
 
 
 class Room:
@@ -16,6 +17,16 @@ class Room:
         self._begin_end_mode = mode
         self._suite_x = Suite(self._width, self._height, self._begin_end_mode)
         self._suite_y = Suite(self._height, self._width, self._begin_end_mode)
+        self._random_routine = []
+        self._random_order = []
+
+    @property
+    def random_routine(self):
+        return self._random_routine
+
+    @property
+    def random_order(self):
+        return self._random_order
 
     @property
     def suite_type(self):
@@ -54,11 +65,33 @@ class Room:
         """
         self._control_points = list(control_points_list)
 
-    def run(self):
+    def random(self):
         """
-        开始运行
+        运行random按钮
         :return:
         """
+        self._pre_run()
+        if self.suite_type == 'X mode':
+            # 进行计算，结果保存在 X 房间类中，还未提取
+            self._suite_x.random()
+        elif self.suite_type == 'Y mode':
+            # 进行计算，结果保存在 Y 房间类中，还未提取
+            self._suite_y.random()
+        elif self.suite_type == 'X/Y mode':
+            self._suite_x.random()
+            self._suite_y.random()
+        else:
+            raise ValueError("房间类型参数错误: %s" % self.suite_type)
+        temp_routine = self._suite_x.random_routine + self._suite_y.random_routine
+        temp_order = self._suite_x.random_order + self._suite_y.random_order
+        try:
+            temp_result = random.choice(list(zip(temp_routine, temp_order)))
+        except IndexError:
+            return
+        self._random_routine = list(temp_result[0])
+        self._random_order.append(temp_result[1])
+
+    def _pre_run(self):
         self._suite_x.begin_end_mode = self.begin_end_mode
         self._suite_y.begin_end_mode = self.begin_end_mode
         # 将控制点坐标输给 X 房间
@@ -66,6 +99,12 @@ class Room:
         # 控制点转换并传递到 Y 房间
         self._suite_y.control_points = self._rotate_points(self.control_points)
 
+    def run(self):
+        """
+        开始运行
+        :return:
+        """
+        self._pre_run()
         if self.suite_type == 'X mode':
             # 进行计算，结果保存在 X 房间类中，还未提取
             self._suite_x.run()
@@ -104,7 +143,8 @@ class Room:
 
 
 if __name__ == '__main__':
-    r = Room(10, 10)
-    r.control_points = [(3, 1), (4, 10), (3, 5), (4, 6), (6, 9), (5, 2)]
-    r.run()
-    # print(r.routines)
+    r = Room(5, 5)
+    r.control_points = []
+    for i in range(10):
+        r.random()
+        print(r.random_routine)
