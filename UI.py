@@ -27,10 +27,6 @@ class Application(tk.Frame):
                                   confirm=self.confirm,
                                   next_page=self.next_page,
                                   random=self.random)
-    #     self.interface.bind("<Button-1>", self.test_click)
-    #
-    # def test_click(self, event):
-    #     print("Oh")
 
     def generate_room(self):
         """
@@ -38,8 +34,6 @@ class Application(tk.Frame):
         :return:
         """
         self.clean_room()
-        self.room_height = self.interface.room_height
-        self.room_width = self.interface.room_width
         self.interface.create_room()
         self.update_info()
         self.interface.select_points_info()
@@ -130,7 +124,8 @@ class Application(tk.Frame):
         将房间信息传递到房间类中
         :return:
         """
-        self.room = Room(height=self.room_height, width=self.room_width, )
+        self.room = Room(height=self.interface.room_height,
+                         width=self.interface.room_width, )
         self.room.control_points = list(self.interface.begin_point +
                                         self.interface.control_points +
                                         self.interface.end_point)

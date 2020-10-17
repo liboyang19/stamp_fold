@@ -112,9 +112,9 @@ class Canvas(tk.Frame):
         gap_width = 4
         canvas_width = self.room_width * self.cell_size
         canvas_height = self.room_height * self.cell_size
-        self.room_canvas.create_line(gap_width, gap_width, canvas_width, gap_width,
+        self.room_canvas.create_line(gap_width, gap_width, gap_width, canvas_height,
                                      fill=self.color_set["cell_gap"], width=gap_width)
-        self.room_canvas.create_line(gap_width, gap_width, gap_width, canvas_width,
+        self.room_canvas.create_line(gap_width, gap_width, canvas_width, gap_width,
                                      fill=self.color_set["cell_gap"], width=gap_width)
         gap_width = 3
         self.room_canvas.create_line(canvas_width, gap_width,
