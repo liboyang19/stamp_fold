@@ -8,10 +8,9 @@ class Canvas(tk.Frame):
         self.master = master
         self.pack()
         self.cell_size = 100
-        # Set color
-        self.color_config()
         # Set language
-        self.info_config()
+        self.info_set = {}
+        self.color_set = {}
         # Parameters
         self._room_width = 0
         self._room_height = 0
@@ -24,6 +23,13 @@ class Canvas(tk.Frame):
         self.points_x = set()
         self.points_y = set()
         self.small_widget = {}
+        self.display_option = {'cell': False,
+                               'arrow': False,
+                               'vanilla': True,
+                               'points': True}
+        # Apply settings
+        self.set_color()
+        self.set_language()
 
     @property
     def room_width(self):
@@ -41,6 +47,26 @@ class Canvas(tk.Frame):
     def room_height(self, height):
         self._room_height = height
 
+    @property
+    def begin_end_mode(self):
+        return bool(self.is_ht.get())
+
+    @property
+    def room_type(self):
+        return self.small_widget['room_type_box'].get()
+
+    @property
+    def control_points(self):
+        return self._control_points
+
+    @property
+    def begin_point(self):
+        return self._begin_point
+
+    @property
+    def end_point(self):
+        return self._end_point
+
     def draw_surface(self):
         # Draw separate areas for arrangement.
         # Draw a grid, i.e. many frames.
@@ -57,7 +83,12 @@ class Canvas(tk.Frame):
         self.info_region = tk.Frame(self)
         self.info_region.grid(row=0, column=1)
 
-    def draw_room_floor(self):
+    def draw_room_floor(self, display=True):
+        self.draw_room_floor_boundary()
+        if self.display_option['cell'] or display:
+            self.draw_room_floor_cell()
+
+    def draw_room_floor_cell(self):
         gap_width = 3
         # 先画行线
         for i in range(self.cell_size,
@@ -76,36 +107,41 @@ class Canvas(tk.Frame):
                                          i, self.room_height * self.cell_size,
                                          fill=self.color_set["cell_gap"],
                                          width=gap_width)
-        self.draw_room_floor_boundary()
 
     def draw_room_floor_boundary(self):
-        # 画出边界上的两条线
         gap_width = 4
-        self.room_canvas.create_line(gap_width, gap_width,
-                                     self.room_width * self.cell_size,
-                                     gap_width,
-                                     fill=self.color_set["cell_gap"],
-                                     width=gap_width)
-        self.room_canvas.create_line(gap_width, gap_width,
-                                     gap_width,
-                                     self.room_width * self.cell_size,
-                                     fill=self.color_set["cell_gap"],
-                                     width=gap_width)
+        canvas_width = self.room_width * self.cell_size
+        canvas_height = self.room_height * self.cell_size
+        self.room_canvas.create_line(gap_width, gap_width, canvas_width, gap_width,
+                                     fill=self.color_set["cell_gap"], width=gap_width)
+        self.room_canvas.create_line(gap_width, gap_width, gap_width, canvas_width,
+                                     fill=self.color_set["cell_gap"], width=gap_width)
+        gap_width = 3
+        self.room_canvas.create_line(canvas_width, gap_width,
+                                     canvas_width, canvas_height,
+                                     fill=self.color_set["cell_gap"], width=gap_width)
+        self.room_canvas.create_line(gap_width, canvas_height,
+                                     canvas_width, canvas_height,
+                                     fill=self.color_set["cell_gap"], width=gap_width)
 
     def create_info(self):
+        row = 0
         self.small_widget['tip_info'] = tk.Label(self.info_region)
         self.small_widget['tip_info']["text"] = self.info_set["tip_info1"]
-        self.small_widget['tip_info'].grid(row=0, column=0)
+        self.small_widget['tip_info'].grid(row=row, column=0)
+        row += 1
 
         self.small_widget['input_width_text'] = tk.Label(self.info_region)
         self.small_widget['input_width_text']["text"] = self.info_set[
             "input_width_text"]
-        self.small_widget['input_width_text'].grid(row=1, column=0)
+        self.small_widget['input_width_text'].grid(row=row, column=0)
+        row += 1
 
         self.small_widget['input_height_text'] = tk.Label(self.info_region)
         self.small_widget['input_height_text']["text"] = self.info_set[
             "input_height_text"]
-        self.small_widget['input_height_text'].grid(row=2, column=0)
+        self.small_widget['input_height_text'].grid(row=row, column=0)
+        row += 1
 
         self.small_widget['input_width'] = ttk.Combobox(self.info_region,
                                                         width=5)
@@ -123,7 +159,8 @@ class Canvas(tk.Frame):
         self.small_widget['input_height'].current(2)
         self.small_widget['input_height'].grid(row=2, column=1)
 
-        tk.Label(self.info_region, text="").grid(row=3, column=0)
+        tk.Label(self.info_region, text="").grid(row=row, column=0)
+        row += 1
 
         # 用该变量判断是否为起终点模式
         self.is_ht = tk.IntVar()
@@ -131,9 +168,10 @@ class Canvas(tk.Frame):
                                                           text=self.info_set["ht_checkbtn"],
                                                           variable=self.is_ht)
 
-        self.small_widget['ht_checkbtn'].grid(row=4, column=0, columnspan=2)
-        tk.Label(self.info_region, text="").grid(row=4, column=0)
-        # tk.Label(self.info_region, text="").grid(row=5, column=0)
+        self.small_widget['ht_checkbtn'].grid(row=row, column=0, columnspan=2)
+        row += 1
+        tk.Label(self.info_region, text="").grid(row=row, column=0)
+        row += 1
 
         # 设置下拉框，用以选择计算模式
         self.small_widget['room_type_box'] = ttk.Combobox(self.info_region,
@@ -143,61 +181,61 @@ class Canvas(tk.Frame):
         self.small_widget['room_type_box']['state'] = 'readonly'
         # 默认是X Y 型都计算
         self.small_widget['room_type_box'].current(0)
-        self.small_widget['room_type_box'].grid(row=6, column=0, columnspan=2)
+        self.small_widget['room_type_box'].grid(row=row, column=0, columnspan=2)
+        row += 1
 
-        tk.Label(self.info_region, text="").grid(row=7, column=0)
+        tk.Label(self.info_region, text="").grid(row=row, column=0)
+        row += 1
 
         self.small_widget['generate_bt'] = tk.Button(self.info_region)
         self.small_widget['generate_bt']['text'] = self.info_set["generate_bt"]
-        self.small_widget['generate_bt'].grid(row=8, column=1)
+        self.small_widget['generate_bt'].grid(row=row, column=1)
+        row += 1
 
-        tk.Label(self.info_region, text="").grid(row=9, column=0)
-
-        # # 占位
-        # interval = 5
-        # start_row = 9
-        # end_row = start_row + interval
-        # for i in range(start_row, end_row):
-        #     tk.Label(self.info_region, text="").grid(row=i, column=0)
+        tk.Label(self.info_region, text="").grid(row=row, column=0)
+        row += 1
 
         self.message = tk.Text(self.info_region, width=24, height=10)
         self.message.config(relief='groove', borderwidth=2)
         self.message.config(font='Menlo')
         self.message.config(background=self.color_set['text_bg'])
-        self.message.grid(row=10, column=0, columnspan=2)
+        self.message.grid(row=row, column=0, columnspan=2)
+        row += 1
 
-        tk.Label(self.info_region, text="").grid(row=11, column=0)
+        tk.Label(self.info_region, text="").grid(row=row, column=0)
+        row += 1
 
         self.small_widget['confirm_bt'] = tk.Button(self.info_region)
         self.small_widget['confirm_bt']['text'] = self.info_set["confirm_bt"]
-        self.small_widget['confirm_bt'].grid(row=12, column=0)
+        self.small_widget['confirm_bt'].grid(row=row, column=0)
+        row += 1
 
-        tk.Label(self.info_region, text="").grid(row=13, column=0)
+        tk.Label(self.info_region, text="").grid(row=row, column=0)
+        row += 1
 
         self.small_widget["next_bt"] = tk.Button(self.info_region)
         self.small_widget["next_bt"]["text"] = self.info_set["next_bt"]
         # 此按钮在计算完成前不能使用
         self.small_widget["next_bt"].config(state='disabled')
-        self.small_widget["next_bt"].grid(row=12, column=1)
-
-        tk.Label(self.info_region, text="").grid(row=15, column=0)
+        row -= 2
+        self.small_widget["next_bt"].grid(row=row, column=1)
+        row += 1
+        tk.Label(self.info_region, text="").grid(row=row, column=0)
+        row += 1
 
         self.small_widget['random_bt'] = tk.Button(self.info_region)
         self.small_widget['random_bt']["text"] = self.info_set["random_bt"]
-        self.small_widget['random_bt'].grid(row=16, column=1)
+        self.small_widget['random_bt'].grid(row=row, column=1)
+        row += 1
 
-        tk.Label(self.info_region, text="").grid(row=17, column=0)
+        tk.Label(self.info_region, text="").grid(row=row, column=0)
+        row += 1
 
     def bind_event(self, generate_room, confirm, next_page, random):
         self.small_widget['generate_bt']["command"] = generate_room
         self.small_widget['confirm_bt']["command"] = confirm
         self.small_widget["next_bt"]["command"] = next_page
         self.small_widget['random_bt']["command"] = random
-        # self.room_canvas.bind("<Button-1>", self.test_click)
-
-    def test_click(self, event):
-        self.room_canvas.focus_set()
-        print('Oh')
 
     def set_control_points(self, event):
         # 设置控制点
@@ -215,25 +253,20 @@ class Canvas(tk.Frame):
                     return
                 self.begin_point.append(cp)
                 self.draw_no(cp, 'S', self.color_set["BE_points"])
-                # print("Begin: ", event.x, event.y)
                 return
             elif not self.end_point:
                 if not self.points_checker(cp):
                     return
                 self.end_point.append(cp)
                 self.draw_no(cp, 'E', self.color_set["BE_points"])
-                # print("End: ", event.x, event.y)
                 return
         # 如果不是起终点，则标记为控制点，将点存进去
         # 还要判断这个点是否符合限制条件
         if not self.points_checker(cp):
             return
         self._control_points.append(cp)
-        # print("clicked at", event.x, event.y)
         # 画出控制点
         self.draw_no(cp, cp_rank, self.color_set["control_points"])
-        # print(self.control_points)
-        # print("Control_points_no:%d" % cp_rank)
 
     def create_room(self):
         self.get_user_room_size()
@@ -329,6 +362,11 @@ class Canvas(tk.Frame):
             self.room_canvas.create_line(start_x, start_y, end_x, end_y,
                                          fill=self.color_set["routine"],
                                          width=self.cell_size // 10)
+        if self.display_option['arrow']:
+            self.draw_start_circle(l)
+            self.draw_end_arrow(l)
+
+    def draw_start_circle(self, l):
         # 将起点处标记为圆圈
         start_x, start_y = l[0]
         circle_coords = self.draw_circle(start_x, start_y,
@@ -340,6 +378,7 @@ class Canvas(tk.Frame):
                                      outline=self.color_set["routine"],
                                      fill=self.color_set["routine"])
 
+    def draw_end_arrow(self, l):
         # 将终点标记为三角
         end_x, end_y = l[-1]
         # 确定方向，默认向左
@@ -408,36 +447,17 @@ class Canvas(tk.Frame):
         self.room_width = int(self.small_widget['input_width'].get())
         self.room_height = int(self.small_widget['input_height'].get())
 
-    def clear(self):
-        self.room_canvas.destroy()
-        self._begin_point = []
-        self._end_point = []
-        self._control_points = []
-        self.points_x = set()
-        self.points_y = set()
-        self.clear_board()
-        # 安排锁定
-        self.small_widget["next_bt"].config(state='disabled')
-
-    def clear_board(self):
-        """
-        清除消息框
-        :return:
-        """
-        self.message.config(state='normal')
-        self.message.delete(0.0, tk.END)
-        self.message.config(state='disabled')
-
     def draw_page(self, routine, cur_no, total_num):
         self.message.config(state='normal')
         self.message.delete(4.0, 5.0)
         self.message.insert(tk.END, "%s / %s\n" % (cur_no, total_num))
         self.message.config(state='disabled')
         self.room_canvas.delete("all")
-        self.draw_room_floor()
+        self.draw_room_floor(False)
         self.draw_routine(routine=routine)
-        self.draw_begin_end_points()
-        self.draw_control_points()
+        if self.display_option['points']:
+            self.draw_begin_end_points()
+            self.draw_control_points()
 
     def draw_begin_end_points(self):
         if self.is_ht.get():
@@ -447,26 +467,6 @@ class Canvas(tk.Frame):
     def draw_control_points(self):
         for i, c in enumerate(self.control_points, 1):
             self.draw_no(c, i, self.color_set["control_points"])
-
-    @property
-    def begin_end_mode(self):
-        return bool(self.is_ht.get())
-
-    @property
-    def room_type(self):
-        return self.small_widget['room_type_box'].get()
-
-    @property
-    def control_points(self):
-        return self._control_points
-
-    @property
-    def begin_point(self):
-        return self._begin_point
-
-    @property
-    def end_point(self):
-        return self._end_point
 
     def finish_info(self):
         self.insert_message(self.info_set['finish'])
@@ -492,15 +492,18 @@ class Canvas(tk.Frame):
         for btn_name, status in kwargs.items():
             self.small_widget[btn_name].config(state=status)
 
-    def color_config(self):
-        self.color_set = {}
-        self.color_set["room"] = "#fff953"  # 柠檬黄
-        self.color_set["routine"] = "#3d97f7"  # 浅蓝色
-        self.color_set["BE_points"] = "#eb4891"  # 草莓红
-        self.color_set["control_points"] = "#3e8c27"  # 三叶草绿
-        self.color_set["cell_gap"] = "black"  # 黑色
-        self.color_set["font_color"] = "#ffffff"  # 白色
+    def set_color(self):
+        self.color_set["cell_gap"] = "black"          # 黑色
+        self.color_set["font_color"] = "#ffffff"      # 白色
         self.color_set["text_bg"] = "#FFEAE5"
+        self.color_set["BE_points"] = "#eb4891"       # 草莓红
+        self.color_set["control_points"] = "#3e8c27"  # 三叶草绿
+        if self.display_option['vanilla']:
+            self.color_set["room"] = "white"
+            self.color_set["routine"] = "black"
+        else:
+            self.color_set["room"] = "#fff953"        # 柠檬黄
+            self.color_set["routine"] = "#3d97f7"     # 浅蓝色
 
     def lock(self):
         self.small_widget['ht_checkbtn'].config(state='disabled')
@@ -516,9 +519,28 @@ class Canvas(tk.Frame):
         self.small_widget['confirm_bt'].config(state='normal')
         self.small_widget['generate_bt'].config(state='normal')
 
-    def info_config(self):
+    def clear(self):
+        self.room_canvas.destroy()
+        self._begin_point = []
+        self._end_point = []
+        self._control_points = []
+        self.points_x = set()
+        self.points_y = set()
+        self.clear_board()
+        # 安排锁定
+        self.small_widget["next_bt"].config(state='disabled')
+
+    def clear_board(self):
+        """
+        清除消息框
+        :return:
+        """
+        self.message.config(state='normal')
+        self.message.delete(0.0, tk.END)
+        self.message.config(state='disabled')
+
+    def set_language(self):
         # Interface language.
-        self.info_set = {}
         self.info_set["tip_info1"] = "Size: "
         self.info_set["input_width_text"] = "Width: "
         self.info_set["input_height_text"] = "Height: "
