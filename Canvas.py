@@ -23,9 +23,9 @@ class Canvas(tk.Frame):
         self.points_x = set()
         self.points_y = set()
         self.small_widget = {}
-        self.display_option = {'cell': False,
-                               'arrow': False,
-                               'vanilla': True,
+        self.display_option = {'cell': True,
+                               'arrow': True,
+                               'vanilla': False,
                                'points': True}
         # Apply settings
         self.set_color()
