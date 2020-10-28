@@ -82,10 +82,14 @@ class Room:
             self._suite_y.random()
         else:
             raise ValueError("房间类型参数错误: %s" % self.suite_type)
-        temp_routine = self._suite_x.random_routine + self._suite_y.random_routine
-        temp_order = self._suite_x.random_order + self._suite_y.random_order
+        self._merge(x_order=self._suite_x.random_order,
+                    y_order=self._suite_y.random_order,
+                    x_rout=self._suite_x.random_routine,
+                    y_rout=self._suite_y.random_routine,
+                    is_random=True)
         try:
-            temp_result = random.choice(list(zip(temp_routine, temp_order)))
+            temp_result = random.choice(list(zip(self.random_routine,
+                                                 self.random_order)))
         except IndexError:
             return
         self._random_routine = list(temp_result[0])
@@ -117,7 +121,8 @@ class Room:
         else:
             raise ValueError("房间类型参数错误: %s" % self.suite_type)
         # 提取计算结果，保存到 orders 和 routines 中
-        self._merge()
+        self._merge(x_order=self._suite_x.orders, y_order=self._suite_y.orders,
+                    x_rout=self._suite_x.routines, y_rout=self._suite_y.routines)
 
     @staticmethod
     def _rotate_points(cp) -> list:
@@ -130,16 +135,22 @@ class Room:
             new_cp[i] = (y, x)
         return new_cp
 
-    def _merge(self):
+    def _merge(self, x_order, y_order, x_rout, y_rout, is_random=False):
         """
-        将 X 型房间和 Y 型房间的结果合并，保存到自身中
+        将 X 型房间和 Y 型房间的结果合并
         :return:
         """
-        [self._orders.append(x) for x in self._suite_x.orders]
-        [self._orders.append(x) for x in self._suite_y.orders]
-        [self._routines.append(x) for x in self._suite_x.routines]
-        for x in self._suite_y.routines:
-            self._routines.append(self._rotate_points(x))
+        if is_random:
+            od = self._random_order
+            rt = self._random_routine
+        else:
+            od = self._orders
+            rt = self._routines
+        [od.append(x) for x in x_order]
+        [od.append(x) for x in y_order]
+        [rt.append(x) for x in x_rout]
+        for x in y_rout:
+            rt.append(self._rotate_points(x))
 
 
 if __name__ == '__main__':
